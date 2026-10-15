@@ -1,0 +1,139 @@
+
+from datetime import datetime, timezone
+from typing import Literal
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field, model_validator
+
+app = FastAPI(
+    title="SecureWealth Twin — Fraud Detection API",
+    description="Hackathon prototype for simulated payment fraud detection.",
+    version="1.0.0",
+)
+
+# Development configuration. Restrict origins before deployment.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
+
+
+class PaymentRequest(BaseModel):
+    amount: float = Field(gt=0, le=10_000_000)
+    payee_id: str = Field(min_length=1, max_length=100)
+    is_new_payee: bool = False
+    unusual_time: bool = False
+    collect_request: bool = False
+    refund_wording: bool = False
+    suspicious_qr_mismatch: bool = False
+    remote_access_suspected: bool = False
+    mule_account_signal: bool = False
+    usual_amount: float = Field(default=1000, gt=0)
+    context: Literal["payment", "receive", "refund"] = "payment"
+
+    @model_validator(mode="after")
+    def validate_context(self):
+        if self.context == "receive" and self.collect_request:
+            # Receiving money should not require entering a UPI PIN
+            # to approve an incoming collect request.
+            return self
+        return self
+
+
+@app.get("/health")
+def health():
+    return {
+        "status": "ok",
+        "service": "SecureWealth Twin Fraud API",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@app.post("/fraud/check")
+def check_fraud(payment: PaymentRequest):
+    score = 0
+    reasons = []
+    categories = []
+
+    # Transparent prototype rules; not yet a trained ML model.
+    if payment.amount >= max(5000, payment.usual_amount * 3):
+        score += 20
+        reasons.append("Amount is unusually high compared with typical spending.")
+
+    if payment.is_new_payee:
+        score += 10
+        reasons.append("This is a first-time payee.")
+
+    if payment.unusual_time:
+        score += 10
+        reasons.append("The transaction occurred at an unusual time.")
+
+    if payment.collect_request:
+        score += 25
+        reasons.append(
+            "A collect request needs scrutiny: approving it may authorize a payment."
+        )
+        categories.append("collect-request scam")
+
+    if payment.refund_wording and payment.context == "payment":
+        score += 25
+        reasons.append(
+            "Refund-related wording accompanies a payment; verify the transaction direction."
+        )
+        categories.append("fake refund scam")
+
+    if payment.suspicious_qr_mismatch:
+        score += 35
+        reasons.append(
+            "The QR payment details do not match the intended recipient."
+        )
+        categories.append("QR-code substitution")
+
+    if payment.remote_access_suspected:
+        score += 35
+        reasons.append(
+            "Possible remote-access activity could expose payment credentials."
+        )
+        categories.append("remote-access scam")
+
+    if payment.mule_account_signal:
+        score += 35
+        reasons.append(
+            "The recipient has a suspicious account-risk signal."
+        )
+        categories.append("possible mule account")
+
+    score = min(score, 100)
+
+    if score >= 60:
+        decision = "BLOCK"
+        risk_level = "HIGH"
+    elif score >= 30:
+        decision = "WARN"
+        risk_level = "MEDIUM"
+    else:
+        decision = "ALLOW"
+        risk_level = "LOW"
+
+    if not reasons:
+        reasons.append("No configured risk indicators were detected.")
+
+    return {
+        "risk_score": score,
+        "risk_level": risk_level,
+        "decision": decision,
+        "reasons": reasons,
+        "fraud_categories": categories,
+        "message": (
+            f"Review this transaction before proceeding. Risk score: {score}/100."
+            if decision != "ALLOW"
+            else "No configured high-risk indicators detected. Stay alert."
+        ),
+        "prototype": True,
+        "model_type": "explainable_rule_based_baseline",
+        "evaluated_at": datetime.now(timezone.utc).isoformat(),
+    }

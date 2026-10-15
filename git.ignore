@@ -1,0 +1,26 @@
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Secrets
+.env
+.env.*
+!.env.example
+firebase-service-account.json
+**/firebase-service-account.json
+
+# Node
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Local databases and backups
+BACKEND/securewealth.db
+BACKEND/securewealth.backup.db
+
+# OS/editor
+.DS_Store
+.vscode/

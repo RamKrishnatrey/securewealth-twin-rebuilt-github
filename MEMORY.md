@@ -1,0 +1,1 @@
+- [Fixed authentication flow and added mock data for dashboard](fix-auth-flow.md) — Added mock data fallbacks to services and fixed navigation issues in Auth flow

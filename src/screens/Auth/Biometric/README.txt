@@ -1,0 +1,1 @@
+Create routes biometric-setup.tsx and biometric-auth.tsx under src/app/(auth).

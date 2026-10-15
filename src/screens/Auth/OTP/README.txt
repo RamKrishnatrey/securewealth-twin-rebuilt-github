@@ -1,0 +1,1 @@
+Create src/app/(auth)/otp.tsx that renders OTPScreen. Verify button currently routes to /(tabs)/dashboard.
