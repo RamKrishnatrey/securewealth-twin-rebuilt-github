@@ -35,6 +35,7 @@ except ImportError:  # pragma: no cover - exercised by direct-module startup.
     from currency_service import get_exchange_rate, convert_amount
     from email_verification_service import verify_email, is_email_deliverable
     from phone_verification_service import verify_phone_number, is_valid_phone_number
+    from currency_app import currency_router
 
 BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "securewealth.db"
