@@ -13,7 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 
-import { verificationService } from "@/services/verificationService";
+import { currencyService } from "@/services/currencyService";
 
 const COLORS = {
   background: "#F8FAFC",
@@ -59,7 +59,7 @@ export default function CurrencyConverterScreen() {
     setLoading(true);
     setError(null);
     try {
-      const response = await verificationService.convertAmount(
+      const response = await currencyService.convertAmount(
         parseFloat(amount),
         baseCurrency,
         targetCurrency
@@ -71,7 +71,8 @@ export default function CurrencyConverterScreen() {
     } catch (err: any) {
       console.error("Conversion error:", err);
       setError(
-        err?.response?.data?.message ||
+        err?.response?.data?.detail ||
+          err?.response?.data?.message ||
           err?.message ||
           "Failed to convert currency. Please try again."
       );
